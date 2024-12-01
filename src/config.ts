@@ -1,0 +1,1 @@
+export const JWTPASSKEY = "123456";
