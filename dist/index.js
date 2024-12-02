@@ -18,7 +18,8 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const config_1 = require("./config");
 const middleware_1 = require("./middleware");
-mongoose_1.default.connect("mongodb+srv://20cs01002:5AlJFtVk8QKD13pe@projects.t9x2v.mongodb.net/Brainly");
+const utils_1 = require("./utils");
+mongoose_1.default.connect(config_1.DB_URL);
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.post("/api/v1/signUp", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -92,6 +93,64 @@ app.delete("/api/v1/content", middleware_1.UserMiddleware, (req, res) => __await
     res.json({
         result,
         message: "deleted"
+    });
+}));
+app.post("/api/v1/brain", middleware_1.UserMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    //@ts-ignore
+    const _id = req.userId;
+    const shared = req.body.shared;
+    if (shared) {
+        const link = yield db_1.LinkModel.findOne({
+            userId: _id
+        });
+        if (link) {
+            res.json({
+                link
+            });
+            return;
+        }
+        const hash = (0, utils_1.random)(10);
+        yield db_1.LinkModel.create({
+            userId: _id,
+            link: hash
+        });
+        res.json({
+            hash
+        });
+        return;
+    }
+    const link = yield db_1.LinkModel.deleteOne({
+        userId: _id
+    });
+    if (link) {
+        res.json({
+            message: "deleted sharable link"
+        });
+    }
+    else {
+        res.json({
+            message: "link is not yet shared to delete"
+        });
+    }
+}));
+app.get("/api/v1/brain/:sharedHash", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const sharedHash = req.params.sharedHash;
+    console.log(sharedHash);
+    const link = yield db_1.LinkModel.findOne({
+        link: sharedHash
+    });
+    if (link) {
+        const _id = link.userId;
+        const content = yield db_1.ContentModel.find({
+            userId: _id
+        });
+        res.json({
+            content
+        });
+        return;
+    }
+    res.status(401).json({
+        message: "link not found"
     });
 }));
 app.listen(3000);
