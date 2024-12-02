@@ -18,6 +18,12 @@ const TagSchema = new Schema({
     title: {type: String, require: true, unique: true}
 })
 
+const LinkSchema = new Schema({
+    link: String,
+    userId: {type: mongoose.Types.ObjectId, ref: "User", require: true, unique: true}
+})
+
+export const LinkModel = model("Link", LinkSchema);
 export const UserModel = model("User", UserSchema);
 export const TagModel = model("Tag", TagSchema);
 export const ContentModel = model("Content", ContentSchema);

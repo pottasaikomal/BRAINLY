@@ -1,10 +1,11 @@
 import express from "express";
-import { UserModel, TagModel, ContentModel } from "./db";
+import { UserModel, TagModel, ContentModel, LinkModel } from "./db";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
-import {JWTPASSKEY} from "./config";
+import {DB_URL, JWTPASSKEY} from "./config";
 import { UserMiddleware } from "./middleware";
-mongoose.connect("mongodb+srv://20cs01002:5AlJFtVk8QKD13pe@projects.t9x2v.mongodb.net/Brainly")
+import {random} from "./utils"
+mongoose.connect(DB_URL);
 const app = express();
 
 app.use(express.json());
@@ -43,7 +44,6 @@ app.post("/api/v1/signIn", async (req, res) => {
         })
     }
 })
-
 
 app.post("/api/v1/content", UserMiddleware, async(req, res) => {
     const link = req.body.link;
@@ -86,6 +86,69 @@ app.delete("/api/v1/content", UserMiddleware, async (req, res) => {
     res.json({
         result,
         message: "deleted"
+    })
+})
+
+app.post("/api/v1/brain", UserMiddleware, async (req, res) => {
+    //@ts-ignore
+    const _id = req.userId;
+    const shared = req.body.shared;
+    if(shared){
+    const link = await LinkModel.findOne({
+        userId: _id
+    })
+    if(link)
+    {
+        res.json({
+            link
+        })
+        return;
+    }
+    const hash = random(10);
+    await LinkModel.create({
+        userId: _id,
+        link: hash
+    })
+    res.json({
+        hash
+    })
+    return;
+}
+   const link = await LinkModel.deleteOne({
+    userId: _id
+   }) 
+   if(link)
+   {
+    res.json({
+        message: "deleted sharable link"
+    })
+   }
+   else{
+    res.json({
+        message: "link is not yet shared to delete"
+    })
+   }
+})
+
+app.get("/api/v1/brain/:sharedHash", async (req, res) => {
+    const sharedHash = req.params.sharedHash;
+    console.log(sharedHash);
+    const link = await LinkModel.findOne({
+        link: sharedHash
+    })
+    if(link)
+    {
+        const _id = link.userId;
+        const content = await ContentModel.find({
+            userId: _id
+        })
+        res.json({
+            content
+        })
+        return;
+    }
+    res.status(401).json({
+        message: "link not found"
     })
 })
 
